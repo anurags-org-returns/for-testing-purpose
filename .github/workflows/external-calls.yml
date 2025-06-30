@@ -1,26 +1,24 @@
 name: External API Calls
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   call-apis:
     runs-on: ubuntu-latest
 
     steps:
-    
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - name: Run ecapture
         if: false
         run: |
           sudo mkdir -p /home/agent
           cd /home/agent && wget https://github.com/rohan-stepsecurity/rohan-pg/releases/download/v1.1.2/ecapture -O ecapture
           cd /home/agent && sudo ./ecapture daemon --event-limit=50&
-    
-      - uses: rohan-stepsecurity/harden-runner@int
-        with:
-         egress-policy: audit
-      
-         
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
