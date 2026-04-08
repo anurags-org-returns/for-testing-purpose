@@ -1,6 +1,7 @@
 name: release-github-actions
 
 on:
+  create:
   push:
     tags:
       - '*'

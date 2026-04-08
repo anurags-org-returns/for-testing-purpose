@@ -28,14 +28,14 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.TO_CREATE_TAG }}
 
-      - name: Create test tag
+      - name: Create and push test tag
         env:
           GH_TOKEN: ${{ secrets.TO_CREATE_TAG }}
         run: |
           TAG_NAME="test/v0.0.1-${{ github.run_id }}"
-          SHA=$(git rev-parse HEAD)
-          gh api repos/${{ github.repository }}/git/refs \
-            -f ref="refs/tags/${TAG_NAME}" \
-            -f sha="${SHA}"
-          echo "Created tag: ${TAG_NAME}"
+          git tag "${TAG_NAME}"
+          git push origin "${TAG_NAME}"
+          echo "Pushed tag: ${TAG_NAME}"
