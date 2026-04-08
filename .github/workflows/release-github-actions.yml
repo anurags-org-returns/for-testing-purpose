@@ -32,7 +32,7 @@ jobs:
       - name: Cleanup test tag
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TO_CREATE_TAG }}
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/${TAG_NAME}" || true
