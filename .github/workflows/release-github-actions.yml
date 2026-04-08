@@ -29,11 +29,15 @@ jobs:
           TEST_TAG_PREFIX: test/
           CLEAN_TEST_TAG: true
 
-      - name: Cleanup test tag
+      - name: Cleanup all test tags
         if: always()
         env:
           GH_TOKEN: ${{ secrets.TO_CREATE_TAG }}
         run: |
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
-          echo "Deleting tag: ${TAG_NAME}"
-          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/${TAG_NAME}"
+          echo "Waiting 10s for action to finish creating tags..."
+          sleep 10
+          echo "Deleting all test/* tags..."
+          gh api "repos/${{ github.repository }}/git/matching-refs/tags/test/" --jq '.[].ref' | while read ref; do
+            echo "Deleting ${ref}"
+            gh api -X DELETE "repos/${{ github.repository }}/git/${ref}"
+          done
