@@ -35,4 +35,5 @@ jobs:
           GH_TOKEN: ${{ secrets.TO_CREATE_TAG }}
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
-          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/${TAG_NAME}" || true
+          echo "Deleting tag: ${TAG_NAME}"
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/${TAG_NAME}"

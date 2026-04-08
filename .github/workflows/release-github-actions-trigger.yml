@@ -35,7 +35,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.TO_CREATE_TAG }}
         run: |
-          TAG_NAME="test/v0.0.1-${{ github.run_id }}"
+          TAG_NAME="test/v99.99.99"
           git tag "${TAG_NAME}"
           git push origin "${TAG_NAME}"
           echo "Pushed tag: ${TAG_NAME}"
