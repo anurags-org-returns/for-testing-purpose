@@ -1,0 +1,37 @@
+name: release-github-actions
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-test:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/test/v')
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run release-github-actions
+        uses: step-security/release-github-actions@release
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_TAG_PREFIX: test/
+          CLEAN_TEST_TAG: true
+
+      - name: Cleanup test tag
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/${TAG_NAME}" || true

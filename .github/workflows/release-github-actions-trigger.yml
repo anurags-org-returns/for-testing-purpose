@@ -1,0 +1,41 @@
+# Trigger workflow for testing release-github-actions.
+# The action requires a real tag create event to run its release logic,
+# so this workflow creates a test tag which triggers the
+# release-github-actions.yml workflow via the `push` event.
+# Uses TO_CREATE_TAG PAT because GITHUB_TOKEN can't trigger other workflows.
+# Cleanup of the test tag is handled by that workflow.
+name: release-github-actions-trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      action-tag:
+        description: "Tag for the action"
+        required: true
+        default: "main"
+
+permissions:
+  contents: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Create test tag
+        env:
+          GH_TOKEN: ${{ secrets.TO_CREATE_TAG }}
+        run: |
+          TAG_NAME="test/v0.0.1-${{ github.run_id }}"
+          SHA=$(git rev-parse HEAD)
+          gh api repos/${{ github.repository }}/git/refs \
+            -f ref="refs/tags/${TAG_NAME}" \
+            -f sha="${SHA}"
+          echo "Created tag: ${TAG_NAME}"
