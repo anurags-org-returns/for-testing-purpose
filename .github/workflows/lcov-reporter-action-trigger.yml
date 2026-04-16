@@ -30,14 +30,16 @@ jobs:
         with:
           token: ${{ secrets.TO_CREATE_TAG }}
 
-      - name: Create test change
-        run: echo "test-${{ github.run_id }}" > testdata/lcov-reporter-action/test-change.txt
-
-      - name: Create PR
-        uses: step-security/create-pull-request@v8
-        with:
-          token: ${{ secrets.TO_CREATE_TAG }}
-          branch: test/lcov-reporter-${{ github.run_id }}
-          title: "Test lcov-reporter-action ${{ github.run_id }}"
-          body: "Automated smoke test - will be closed automatically"
-          commit-message: "test: lcov reporter smoke test"
+      - name: Create test branch and PR
+        env:
+          GH_TOKEN: ${{ secrets.TO_CREATE_TAG }}
+        run: |
+          BRANCH="test/lcov-reporter-${{ github.run_id }}"
+          git checkout -b "${BRANCH}"
+          echo "test-${{ github.run_id }}" > testdata/lcov-reporter-action/test-change.txt
+          git add .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test: lcov reporter smoke test"
+          git push origin "${BRANCH}"
+          gh pr create --title "Test lcov-reporter-action ${{ github.run_id }}" --body "Automated smoke test - will be closed automatically" --head "${BRANCH}" --base main
