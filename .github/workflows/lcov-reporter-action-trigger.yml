@@ -1,0 +1,43 @@
+# Trigger workflow for testing lcov-reporter-action.
+# Creates a PR which triggers lcov-reporter-action.yml via the pull_request event.
+# Uses TO_CREATE_TAG because GITHUB_TOKEN can't trigger other workflows.
+# Cleanup is handled by the test workflow.
+name: lcov-reporter-action-trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      action-tag:
+        description: "Tag for the action"
+        required: true
+        default: "main"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.TO_CREATE_TAG }}
+
+      - name: Create test change
+        run: echo "test-${{ github.run_id }}" > testdata/lcov-reporter-action/test-change.txt
+
+      - name: Create PR
+        uses: step-security/create-pull-request@v8
+        with:
+          token: ${{ secrets.TO_CREATE_TAG }}
+          branch: test/lcov-reporter-${{ github.run_id }}
+          title: "Test lcov-reporter-action ${{ github.run_id }}"
+          body: "Automated smoke test - will be closed automatically"
+          commit-message: "test: lcov reporter smoke test"
