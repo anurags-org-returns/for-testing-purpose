@@ -34,7 +34,7 @@ jobs:
 
       - name: Apply size label
         if: steps.size.outputs.new_label != ''
-        uses: step-security/action-add-labels@v1
+        uses: step-security/action-add-labels@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ steps.size.outputs.new_label }}
