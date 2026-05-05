@@ -1,0 +1,50 @@
+# Functional test for step-security/action-size.
+# Fires on PRs created by action-size-trigger.yml (which uses a PAT so this
+# workflow actually triggers). Runs action-size with the runner-provided
+# pull_request payload, applies the size label, then auto-closes the PR and
+# deletes the branch.
+name: action-size
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'testdata/action-size/test-change.txt'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  action-size-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run action-size
+        id: size
+        uses: step-security/action-size@release
+
+      - name: Apply size label
+        if: steps.size.outputs.new_label != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR_NUM" --add-label "${{ steps.size.outputs.new_label }}"
+
+      - name: Cleanup - close PR and delete branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr close "$PR_NUM" \
+            --delete-branch \
+            --comment "Functional test complete. Computed size label: '${{ steps.size.outputs.new_label }}'."
