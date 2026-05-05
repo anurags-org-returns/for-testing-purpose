@@ -34,10 +34,10 @@ jobs:
 
       - name: Apply size label
         if: steps.size.outputs.new_label != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUM: ${{ github.event.pull_request.number }}
-        run: gh pr edit "$PR_NUM" --add-label "${{ steps.size.outputs.new_label }}"
+        uses: step-security/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ steps.size.outputs.new_label }}
 
       - name: Cleanup - close PR and delete branch
         if: always()
