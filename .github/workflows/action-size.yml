@@ -30,7 +30,7 @@ jobs:
 
       - name: Run action-size
         id: size
-        uses: step-security/action-size@release
+        uses: step-security/action-size@main
 
       - name: Apply size label
         if: steps.size.outputs.new_label != ''
