@@ -1,0 +1,98 @@
+name: sonarqube-quality-gate-action
+
+# Real-SonarQube integration test using a Dockerized SonarQube Community Edition.
+# Self-contained: spins up SonarQube as a service container, bootstraps a token,
+# runs sonarsource/sonarqube-scan-action against the fixture under
+# testdata/sonarqube-quality-gate-action/, then checks the quality gate.
+# Wall time: ~3 min (90s SQ boot + ~30s scan + ~10s action).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qgate:
+    runs-on: ubuntu-latest
+    services:
+      sonarqube:
+        image: sonarqube:community
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fs http://localhost:9000/api/system/status | grep -q '\"status\":\"UP\"'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 30
+          --health-start-period 60s
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v6
+        with:
+          # Full history improves relevance of analysis
+          fetch-depth: 0
+
+      - name: Wait for SonarQube
+        run: |
+          for i in $(seq 1 60); do
+            STATUS=$(curl -fs -u admin:admin http://localhost:9000/api/system/status 2>/dev/null | jq -r .status 2>/dev/null || echo "")
+            echo "  attempt $i: status=$STATUS"
+            [ "$STATUS" = "UP" ] && exit 0
+            sleep 5
+          done
+          echo "✗ SonarQube did not reach UP within timeout"
+          exit 1
+
+      - name: Bootstrap admin password + generate token
+        id: sonar
+        run: |
+          set -e
+          NEW_PASS='NewPassw0rd!'
+
+          # SonarQube requires a password change on first admin login
+          curl -fsS -u admin:admin -X POST \
+            "http://localhost:9000/api/users/change_password" \
+            --data-urlencode "login=admin" \
+            --data-urlencode "previousPassword=admin" \
+            --data-urlencode "password=$NEW_PASS"
+
+          # Generate analysis token
+          TOKEN=$(curl -fsS -u "admin:$NEW_PASS" -X POST \
+            "http://localhost:9000/api/user_tokens/generate" \
+            --data-urlencode "name=smoke-test-$(date +%s)" \
+            | jq -r .token)
+
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "✗ failed to generate SonarQube token"
+            exit 1
+          fi
+
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v8
+        with:
+          projectBaseDir: testdata/sonarqube-quality-gate-action
+        env:
+          SONAR_TOKEN: ${{ steps.sonar.outputs.token }}
+          SONAR_HOST_URL: http://localhost:9000
+
+      - name: SonarQube Quality Gate check (@main)
+        id: qgate
+        uses: step-security/sonarqube-quality-gate-action@main
+        with:
+          pollingTimeoutSec: 600
+          scanMetadataReportFile: testdata/sonarqube-quality-gate-action/.scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ steps.sonar.outputs.token }}
+          SONAR_HOST_URL: http://localhost:9000
+
+      - name: Show Quality Gate status
+        run: |
+          echo "Quality Gate status: ${{ steps.qgate.outputs.quality-gate-status }}"
