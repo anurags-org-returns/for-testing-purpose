@@ -1,0 +1,90 @@
+# Smoke tests for step-security/workflow-application-token-action.
+name: workflow-application-token-action
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/workflow-application-token-action.yml'
+
+jobs:
+  test-success-repo:
+    name: success - app installed on repo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - name: Generate token
+        id: generate-token
+        uses: step-security/workflow-application-token-action@release
+        with:
+          application_id: ${{ secrets.APPLICATION_ID }}
+          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+
+      - name: Verify token works
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh api repos/${{ github.repository }} --jq '.full_name'
+
+  test-failure-repo-not-installed:
+    name: failure - app not installed on repo
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - name: Use action (expect failure)
+        id: action
+        uses: step-security/workflow-application-token-action@release
+        with:
+          application_id: ${{ secrets.APPLICATION_ID_NOT_INSTALLED }}
+          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY_NOT_INSTALLED }}
+
+  validate-failure-repo:
+    name: validate - repo not installed failed
+    runs-on: ubuntu-latest
+    needs: test-failure-repo-not-installed
+    steps:
+      - name: Assert step failed
+        if: needs.test-failure-repo-not-installed.result != 'failure'
+        run: |
+          echo "Expected job to fail when app is not installed on the repo"
+          exit 1
+
+  test-failure-org-not-installed:
+    name: failure - app not installed on org
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@rc
+        with:
+          egress-policy: audit
+
+      - name: Use action (expect failure)
+        id: action
+        uses: step-security/workflow-application-token-action@release
+        with:
+          application_id: ${{ secrets.APPLICATION_ID_NOT_INSTALLED }}
+          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY_NOT_INSTALLED }}
+          organization: devopsventures
+
+  validate-failure-org:
+    name: validate - org not installed failed
+    runs-on: ubuntu-latest
+    needs: test-failure-org-not-installed
+    steps:
+      - name: Assert step failed
+        if: needs.test-failure-org-not-installed.result != 'failure'
+        run: |
+          echo "Expected job to fail when app is not installed on the org"
+          exit 1
