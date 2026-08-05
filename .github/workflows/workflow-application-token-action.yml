@@ -21,7 +21,7 @@ jobs:
 
       - name: Generate token
         id: generate-token
-        uses: step-security/workflow-application-token-action@release
+        uses: step-security/workflow-application-token-action@main
         with:
           application_id: ${{ secrets.APPLICATION_ID }}
           application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
@@ -46,7 +46,7 @@ jobs:
 
       - name: Use action (expect failure)
         id: action
-        uses: step-security/workflow-application-token-action@release
+        uses: step-security/workflow-application-token-action@main
         with:
           application_id: ${{ secrets.APPLICATION_ID_NOT_INSTALLED }}
           application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY_NOT_INSTALLED }}
@@ -76,7 +76,7 @@ jobs:
 
       - name: Use action (expect failure)
         id: action
-        uses: step-security/workflow-application-token-action@release
+        uses: step-security/workflow-application-token-action@main
         with:
           application_id: ${{ secrets.APPLICATION_ID_NOT_INSTALLED }}
           application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY_NOT_INSTALLED }}
