@@ -76,7 +76,7 @@ jobs:
         with:
           application_id: ${{ secrets.APPLICATION_ID_NOT_INSTALLED }}
           application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY_NOT_INSTALLED }}
-          organization: devopsventures
+          organization: anurags-org-returns
 
   validate-failure-org:
     name: validate - org not installed failed
