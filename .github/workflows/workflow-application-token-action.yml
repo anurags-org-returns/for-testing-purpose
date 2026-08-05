@@ -36,6 +36,8 @@ jobs:
     name: failure - app not installed on repo
     runs-on: ubuntu-latest
     continue-on-error: true
+    outputs:
+      outcome: ${{ steps.action.outcome }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@rc
@@ -55,15 +57,17 @@ jobs:
     needs: test-failure-repo-not-installed
     steps:
       - name: Assert step failed
-        if: needs.test-failure-repo-not-installed.result != 'failure'
+        if: needs.test-failure-repo-not-installed.outputs.outcome != 'failure'
         run: |
-          echo "Expected job to fail when app is not installed on the repo"
+          echo "Expected action to fail when app is not installed on the repo"
           exit 1
 
   test-failure-org-not-installed:
     name: failure - app not installed on org
     runs-on: ubuntu-latest
     continue-on-error: true
+    outputs:
+      outcome: ${{ steps.action.outcome }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@rc
@@ -84,7 +88,7 @@ jobs:
     needs: test-failure-org-not-installed
     steps:
       - name: Assert step failed
-        if: needs.test-failure-org-not-installed.result != 'failure'
+        if: needs.test-failure-org-not-installed.outputs.outcome != 'failure'
         run: |
-          echo "Expected job to fail when app is not installed on the org"
+          echo "Expected action to fail when app is not installed on the org"
           exit 1
